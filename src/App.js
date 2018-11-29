@@ -2,24 +2,39 @@ import React, { Component } from 'react';
 import logo from './logo.svg';
 import './App.css';
 
+import { API, graphqlOperation } from 'aws-amplify';
+
+
+const query = `
+    query listTodos {
+        listTodos {
+            items {
+                id
+                title
+                completed
+            }
+        }
+    }
+`;
+
 class App extends Component {
+  state = { todos: [] }
+  async componentDidMount() {
+    const data = await API.graphql(graphqlOperation(query))
+    this.setState({
+      todos: data.data.listTodos.items
+    })
+  }
   render() {
     return (
       <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
+        {
+          this.state.todos.map((todo) => (
+            <p key={todo.id}>
+              {todo.title}
+            </p>
+          ))
+        }
       </div>
     );
   }
