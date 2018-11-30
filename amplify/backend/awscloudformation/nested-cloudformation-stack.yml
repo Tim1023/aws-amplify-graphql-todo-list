@@ -90,6 +90,60 @@
 					"DeploymentTimestamp": "1543519216538"
 				}
 			}
+		},
+		"authcognitoaa06b040": {
+			"Type": "AWS::CloudFormation::Stack",
+			"Properties": {
+				"TemplateURL": "https://s3.amazonaws.com/todoist-20181130081002-deployment/amplify-cfn-templates/auth/cognitoaa06b040-cloudformation-template.yml",
+				"Parameters": {
+					"identityPoolName": "cognitoaa06b040_identitypool_aa06b040",
+					"allowUnauthenticatedIdentities": false,
+					"thirdPartyAuth": true,
+					"lambdaLogPolicy": "cognitoaa06b040_lambda_log_policy",
+					"openIdLambdaRoleName": "cognitoaa06b040_openid_lambda_role",
+					"openIdRolePolicy": "cognitoaa06b040_openid_pass_role_policy",
+					"openIdLambdaIAMPolicy": "cognitoaa06b040_openid_lambda_iam_policy",
+					"openIdLogPolicy": "cognitoaa06b040_openid_lambda_log_policy",
+					"userPoolName": "cognitoaa06b040_userpool_aa06b040",
+					"autoVerifiedAttributes": "email",
+					"mfaConfiguration": "OFF",
+					"mfaTypes": "SMS Text Message",
+					"roleName": "cognitoaa06b040_sns-role",
+					"roleExternalId": "cognitoaa06b040_role_external_id",
+					"policyName": "cognitoaa06b040-sns-policy",
+					"smsAuthenticationMessage": "Your authentication code is {####}",
+					"smsVerificationMessage": "Your verification code is {####}",
+					"emailVerificationSubject": "Your verification code",
+					"emailVerificationMessage": "Your verification code is {####}",
+					"defaultPasswordPolicy": false,
+					"passwordPolicyMinLength": 8,
+					"passwordPolicyCharacters": "Requires Lowercase,Requires Uppercase,Requires Numbers,Requires Symbols",
+					"requiredAttributes": "email",
+					"userpoolClientName": "cognitoaa06b040_app_client",
+					"userpoolClientGenerateSecret": true,
+					"userpoolClientRefreshTokenValidity": 30,
+					"userpoolClientReadAttributes": "email",
+					"mfaLambdaRole": "cognitoaa06b040_totp_lambda_role",
+					"mfaLambdaLogPolicy": "cognitoaa06b040_totp_lambda_log_policy",
+					"mfaPassRolePolicy": "cognitoaa06b040_totp_pass_role_policy",
+					"mfaLambdaIAMPolicy": "cognitoaa06b040_totp_lambda_iam_policy",
+					"userpoolClientLambdaRole": "cognitoaa06b040_userpoolclient_lambda_role",
+					"userpoolClientLogPolicy": "cognitoaa06b040_userpoolclient_lambda_log_policy",
+					"userpoolClientLambdaPolicy": "cognitoaa06b040_userpoolclient_lambda_iam_policy",
+					"userpoolClientSetAttributes": false,
+					"useDefault": "manual",
+					"unAuthRoleName": "todoist-20181130081002-unauthRole",
+					"authRoleName": "todoist-20181130081002-authRole",
+					"unAuthRoleArn": "arn:aws:iam::486218663474:role/todoist-20181130081002-unauthRole",
+					"authRoleArn": "arn:aws:iam::486218663474:role/todoist-20181130081002-authRole",
+					"resourceName": "cognitoaa06b040",
+					"authSelections": "identityPoolAndUserPool",
+					"authProviders": "graph.facebook.com,accounts.google.com",
+					"facebookAppId": "508487719679039",
+					"googleClientId": "742418607389-s3e9032dupbdmvb5km8iarotsu4s0f8e.apps.googleusercontent.com",
+					"selectedParties": "{\"graph.facebook.com\":\"508487719679039\",\"accounts.google.com\":\"742418607389-s3e9032dupbdmvb5km8iarotsu4s0f8e.apps.googleusercontent.com\"}"
+				}
+			}
 		}
 	},
 	"Outputs": {

@@ -1,26 +1,13 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
 import './App.css';
 
 import { API, graphqlOperation } from 'aws-amplify';
-
-
-const query = `
-    query listTodos {
-        listTodos {
-            items {
-                id
-                title
-                completed
-            }
-        }
-    }
-`;
+import {listTodos} from "./graphql/queries";
 
 class App extends Component {
   state = { todos: [] }
   async componentDidMount() {
-    const data = await API.graphql(graphqlOperation(query))
+    const data = await API.graphql(graphqlOperation(listTodos))
     this.setState({
       todos: data.data.listTodos.items
     })
