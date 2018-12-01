@@ -8,6 +8,21 @@ import * as mutations from "./graphql/mutations";
 import * as subscriptions from "./graphql/subscriptions";
 
 
+const Todo = ({ item }) => (
+  <Connect mutation={graphqlOperation(mutations.deleteTodo)}>
+    {({ mutation: deleteTodo }) => (
+      <div>
+        <span title={item.title}>
+          {item.title}
+        </span>
+        <button onClick={() => deleteTodo({ input: { id: item.id } })}>
+          Delete
+        </button>
+      </div>
+    )}
+  </Connect>
+);
+
 class AddTodo extends Component {
   constructor(props) {
     super(props);
@@ -61,9 +76,9 @@ class App extends Component {
     const ListView = ({ todos }) => (
       <div>
         <h3>All Todos</h3>
-        <ul>
-          {todos.map(todo => <li key={todo.id}>{todo.title}</li>)}
-        </ul>
+        <div>
+          {todos.map(todo =>  <Todo key={todo.id} item={todo} />)}
+        </div>
       </div>
     );
 
