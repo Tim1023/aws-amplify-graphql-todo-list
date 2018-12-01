@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import './App.css';
 
-import { API, graphqlOperation } from 'aws-amplify';
+import { graphqlOperation } from 'aws-amplify';
 import { Connect } from "aws-amplify-react";
 import * as queries from "./graphql/queries";
 import * as mutations from "./graphql/mutations";
@@ -21,13 +21,16 @@ class AddTodo extends Component {
   }
 
   async submit() {
+    console.log(this.state);
     const { onCreate } = this.props;
     const input = {
       title: this.state.title,
       completed: false,
     };
-    console.log(input);
     await onCreate({input});
+    this.setState({
+      title: '',
+    })
   }
 
   render(){
@@ -36,9 +39,12 @@ class AddTodo extends Component {
         <input
           name="title"
           placeholder="Add a todo"
+          onKeyPress={event => {
+            event.key === "Enter" && this.submit();
+          }}
           onChange={(ev) => { this.handleChange('title', ev)}}
         />
-        <button onClick={this.submit.bind(this)}>
+        <button onClick={()=>this.submit()}>
           Add
         </button>
       </div>
@@ -49,25 +55,8 @@ class AddTodo extends Component {
 
 class App extends Component {
   state = {
-    // todo: '',
     todos: [],
   };
-  // async componentDidMount() {
-  //   const data = await API.graphql(graphqlOperation(queries.listTodos))
-  //   this.setState({
-  //     todos: data.data.listTodos.items
-  //   })
-  // }
-  // addTodo = async() => {
-  //   if (this.state.todo === '' ) return;
-  //   const todo = {
-  //     title: this.state.todo,
-  //     completed: false,
-  //   };
-  //   const data = await API.graphql(graphqlOperation(mutations.createTodo, {input:todo}));
-  //   console.log(data);
-  //   this.setState({ todo: '' })
-  // };
   render() {
     const ListView = ({ todos }) => (
       <div>
