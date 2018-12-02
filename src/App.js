@@ -4,30 +4,29 @@ import './App.css';
 import {API, graphqlOperation} from 'aws-amplify';
 import * as queries from "./graphql/queries";
 import * as mutations from "./graphql/mutations";
+import * as subscriptions from './graphql/subscriptions';
 
 
 class Todo extends Component {
-  async handleDelete() {
+  handleDelete() {
     const input = {id: this.props.item.id};
-    const data = await API.graphql(graphqlOperation(mutations.deleteTodo, {input}));
-    this.props.deleteTodo(data.data.deleteTodo);
+    API.graphql(graphqlOperation(mutations.deleteTodo, {input}));
   }
 
-  async handleUpdate() {
+  handleUpdate() {
     const input = {
       id: this.props.item.id,
       completed: !this.props.item.completed,
       title: this.props.item.title,
     };
-    const data = await API.graphql(graphqlOperation(mutations.updateTodo, {input}));
-    this.props.updateTodo(data.data.updateTodo);
+    API.graphql(graphqlOperation(mutations.updateTodo, {input}));
   }
 
   render() {
     return (
       <div>
         <button onClick={() => this.handleUpdate()}>
-          {this.props.item.completed ? '已完成' : '未完成'}
+          {this.props.item.completed ? 'Done' : 'Todo'}
         </button>
         <span title={this.props.item.title}>
           {this.props.item.title}
@@ -41,13 +40,9 @@ class Todo extends Component {
 }
 
 class AddTodo extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      title: '',
-    };
-  }
-
+  state = {
+    title: '',
+  };
   handleChange(name, ev) {
     this.setState({[name]: ev.target.value});
   }
@@ -57,8 +52,7 @@ class AddTodo extends Component {
       title: this.state.title,
       completed: false,
     };
-    const data = await API.graphql(graphqlOperation(mutations.createTodo, {input}));
-    this.props.createTodo(data.data.createTodo);
+    await API.graphql(graphqlOperation(mutations.createTodo, {input}));
 
     this.setState({
       title: '',
@@ -77,6 +71,7 @@ class AddTodo extends Component {
           onChange={(ev) => {
             this.handleChange('title', ev)
           }}
+          value={this.state.title}
         />
         <button onClick={() => this.submit()}>
           Add
@@ -95,8 +90,33 @@ class App extends Component {
   async componentDidMount() {
     const data = await API.graphql(graphqlOperation(queries.listTodos))
     this.setState({
-      todos: data.data.listTodos.items
+      todos: data.data.listTodos.items,
     })
+    // createTodo subscriptions
+    this.createTodoSubscription = API.graphql(
+      graphqlOperation(subscriptions.onCreateTodo)
+    ).subscribe({
+      next: (todoData) => this.createTodo(todoData.value.data.onCreateTodo)
+    });
+    // deleteTodo subscriptions
+    this.delteTodoSubscription = API.graphql(
+      graphqlOperation(subscriptions.onDeleteTodo)
+    ).subscribe({
+      next: (todoData) => this.deleteTodo(todoData.value.data.onDeleteTodo)
+    });
+    // updateTodo subscriptions
+    this.updateTodoSubscription = API.graphql(
+      graphqlOperation(subscriptions.onUpdateTodo)
+    ).subscribe({
+      next: (todoData) => this.updateTodo(todoData.value.data.onUpdateTodo)
+    });
+
+
+  }
+  componentWillUnmount(){
+    this.createTodoSubscription.unsubscribe();
+    this.delteTodoSubscription.unsubscribe();
+    this.updateTodoSubscription.unsubscribe();
   }
 
   createTodo(newTodo) {
@@ -127,16 +147,14 @@ class App extends Component {
           {todos.map(todo =>
             <Todo
               key={todo.id}
-              item={todo}
-              deleteTodo={(todo) => this.deleteTodo(todo)}
-              updateTodo={(todo) => this.updateTodo(todo)}/>)}
+              item={todo}/>)}
         </div>
       </div>
     );
 
     return (
       <div className="App">
-        <AddTodo createTodo={(newTodo) => this.createTodo(newTodo)}/>
+        <AddTodo/>
 
         <ListView todos={this.state.todos ? this.state.todos : []}/>
 
