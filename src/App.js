@@ -88,9 +88,10 @@ class App extends Component {
   };
 
   async componentDidMount() {
-    const data = await API.graphql(graphqlOperation(queries.listTodos))
+    const data = await API.graphql(graphqlOperation(queries.listTodos));
     this.setState({
       todos: data.data.listTodos.items,
+      nextToken: data.data.listTodos.nextToken,
     })
     // createTodo subscriptions
     this.createTodoSubscription = API.graphql(
@@ -138,6 +139,14 @@ class App extends Component {
       todos,
     })
   }
+  async loadMore(){
+    const {data:{listTodos:{items=[],nextToken=''}}} = await API.graphql(graphqlOperation(queries.listTodos,{nextToken:this.state.nextToken}));
+    console.log(nextToken);
+    this.setState({
+      todos:[...this.state.todos,...items],
+      nextToken,
+    })
+  }
 
   render() {
     const ListView = ({todos}) => (
@@ -156,7 +165,13 @@ class App extends Component {
       <div className="App">
         <AddTodo/>
 
-        <ListView todos={this.state.todos ? this.state.todos : []}/>
+        <ListView todos={this.state.todos}/>
+        {
+          this.state.todos.length && this.state.nextToken ? <button onClick={() => this.loadMore()}>Load More</button> : ''
+        }
+        {
+          !this.state.nextToken ? <div>No more data</div> : ''
+        }
 
       </div>
     );
