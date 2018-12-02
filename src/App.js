@@ -1,27 +1,44 @@
-import React, { Component } from 'react';
+import React, {Component} from 'react';
 import './App.css';
 
-import { graphqlOperation } from 'aws-amplify';
-import { Connect } from "aws-amplify-react";
+import {API, graphqlOperation} from 'aws-amplify';
 import * as queries from "./graphql/queries";
 import * as mutations from "./graphql/mutations";
-import * as subscriptions from "./graphql/subscriptions";
 
 
-const Todo = ({ item }) => (
-  <Connect mutation={graphqlOperation(mutations.deleteTodo)}>
-    {({ mutation: deleteTodo }) => (
+class Todo extends Component {
+  async handleDelete() {
+    const input = {id: this.props.item.id};
+    const data = await API.graphql(graphqlOperation(mutations.deleteTodo, {input}));
+    this.props.deleteTodo(data.data.deleteTodo);
+  }
+
+  async handleUpdate() {
+    const input = {
+      id: this.props.item.id,
+      completed: !this.props.item.completed,
+      title: this.props.item.title,
+    };
+    const data = await API.graphql(graphqlOperation(mutations.updateTodo, {input}));
+    this.props.updateTodo(data.data.updateTodo);
+  }
+
+  render() {
+    return (
       <div>
-        <span title={item.title}>
-          {item.title}
+        <button onClick={() => this.handleUpdate()}>
+          {this.props.item.completed ? '已完成' : '未完成'}
+        </button>
+        <span title={this.props.item.title}>
+          {this.props.item.title}
         </span>
-        <button onClick={() => deleteTodo({ input: { id: item.id } })}>
+        <button onClick={() => this.handleDelete()}>
           Delete
         </button>
       </div>
-    )}
-  </Connect>
-);
+    )
+  }
+}
 
 class AddTodo extends Component {
   constructor(props) {
@@ -32,23 +49,23 @@ class AddTodo extends Component {
   }
 
   handleChange(name, ev) {
-    this.setState({ [name]: ev.target.value });
+    this.setState({[name]: ev.target.value});
   }
 
   async submit() {
-    console.log(this.state);
-    const { onCreate } = this.props;
     const input = {
       title: this.state.title,
       completed: false,
     };
-    await onCreate({input});
+    const data = await API.graphql(graphqlOperation(mutations.createTodo, {input}));
+    this.props.createTodo(data.data.createTodo);
+
     this.setState({
       title: '',
     })
   }
 
-  render(){
+  render() {
     return (
       <div>
         <input
@@ -57,9 +74,11 @@ class AddTodo extends Component {
           onKeyPress={event => {
             event.key === "Enter" && this.submit();
           }}
-          onChange={(ev) => { this.handleChange('title', ev)}}
+          onChange={(ev) => {
+            this.handleChange('title', ev)
+          }}
         />
-        <button onClick={()=>this.submit()}>
+        <button onClick={() => this.submit()}>
           Add
         </button>
       </div>
@@ -72,42 +91,55 @@ class App extends Component {
   state = {
     todos: [],
   };
+
+  async componentDidMount() {
+    const data = await API.graphql(graphqlOperation(queries.listTodos))
+    this.setState({
+      todos: data.data.listTodos.items
+    })
+  }
+
+  createTodo(newTodo) {
+    this.setState({todos: [...this.state.todos, newTodo]});
+  }
+
+  deleteTodo(newTodo) {
+    this.setState({todos: this.state.todos.filter(todo => todo.id !== newTodo.id)});
+  }
+
+  updateTodo(newTodo) {
+    const todos = this.state.todos.map(todo => todo.id === newTodo.id
+      ? {
+        ...todo,
+        completed: !todo.completed
+      }
+      : todo);
+    this.setState({
+      todos,
+    })
+  }
+
   render() {
-    const ListView = ({ todos }) => (
+    const ListView = ({todos}) => (
       <div>
         <h3>All Todos</h3>
         <div>
-          {todos.map(todo =>  <Todo key={todo.id} item={todo} />)}
+          {todos.map(todo =>
+            <Todo
+              key={todo.id}
+              item={todo}
+              deleteTodo={(todo) => this.deleteTodo(todo)}
+              updateTodo={(todo) => this.updateTodo(todo)}/>)}
         </div>
       </div>
     );
 
     return (
       <div className="App">
-        <Connect mutation={graphqlOperation(mutations.createTodo)}>
-          {({mutation}) => (
-            <AddTodo onCreate={mutation} />
-          )}
-        </Connect>
-        <Connect
-          query={graphqlOperation(queries.listTodos)}
-          subscription={graphqlOperation(subscriptions.onCreateTodo)}
-          onSubscriptionMsg={(prev, { onCreateTodo }) => {
-            console.log(prev)
-            return {
-              listTodos: {
-                items: prev.listTodos.items.concat([onCreateTodo]),
-                nextToken: prev.listTodos.nextToken
-              }
-            };
-          }}
-        >
-          {({ data: { listTodos }, loading, error }) => {
-            if (error) return (<h3>Error</h3>);
-            if (loading || !listTodos) return (<h3>Loading...</h3>);
-            return <ListView todos={listTodos ? listTodos.items : []} />
-          }}
-        </Connect>
+        <AddTodo createTodo={(newTodo) => this.createTodo(newTodo)}/>
+
+        <ListView todos={this.state.todos ? this.state.todos : []}/>
+
       </div>
     );
   }
