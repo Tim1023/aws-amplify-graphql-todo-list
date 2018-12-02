@@ -42,7 +42,9 @@ class Todo extends Component {
 class AddTodo extends Component {
   state = {
     title: '',
+    state: 'all',
   };
+
   handleChange(name, ev) {
     this.setState({[name]: ev.target.value});
   }
@@ -88,11 +90,7 @@ class App extends Component {
   };
 
   async componentDidMount() {
-    const data = await API.graphql(graphqlOperation(queries.listTodos));
-    this.setState({
-      todos: data.data.listTodos.items,
-      nextToken: data.data.listTodos.nextToken,
-    })
+    this.queryAll();
     // createTodo subscriptions
     this.createTodoSubscription = API.graphql(
       graphqlOperation(subscriptions.onCreateTodo)
@@ -114,7 +112,8 @@ class App extends Component {
 
 
   }
-  componentWillUnmount(){
+
+  componentWillUnmount() {
     this.createTodoSubscription.unsubscribe();
     this.delteTodoSubscription.unsubscribe();
     this.updateTodoSubscription.unsubscribe();
@@ -139,12 +138,68 @@ class App extends Component {
       todos,
     })
   }
-  async loadMore(){
-    const {data:{listTodos:{items=[],nextToken=''}}} = await API.graphql(graphqlOperation(queries.listTodos,{nextToken:this.state.nextToken}));
-    console.log(nextToken);
+
+  async loadMore() {
+    const completedFilter = {
+      completed: {
+        eq: true,
+      }
+    };
+    const processingFilter = {
+      completed: {
+        eq: false,
+      }
+    };
+    const filter = this.state.state === 'completed'
+      ? completedFilter
+      : this.state.state === 'processing'
+        ? processingFilter
+        : '';
+    const options = {
+      nextToken: this.state.nextToken,
+    };
+    this.state.state !== 'all' && (options.filter = filter);
+    const {data: {listTodos: {items = [], nextToken = ''}}} =
+      await API.graphql(graphqlOperation(queries.listTodos, options));
     this.setState({
-      todos:[...this.state.todos,...items],
+      todos: [...this.state.todos, ...items],
       nextToken,
+    })
+  }
+
+  async queryCompleted() {
+    const filter = {
+      completed: {
+        eq: true,
+      }
+    };
+    const {data: {listTodos: {items = [], nextToken = ''}}} = await API.graphql(graphqlOperation(queries.listTodos, {filter}));
+    this.setState({
+      todos: items,
+      nextToken,
+      state: 'completed',
+    })
+  }
+
+  async queryProcessing() {
+    const filter = {
+      completed: {
+        eq: false,
+      }
+    };
+    const {data: {listTodos: {items = [], nextToken = ''}}} = await API.graphql(graphqlOperation(queries.listTodos, {filter}));
+    this.setState({
+      todos: items,
+      nextToken,
+      state: 'processing',
+    })
+  }
+  async queryAll() {
+    const {data: {listTodos: {items = [], nextToken = ''}}} = await API.graphql(graphqlOperation(queries.listTodos));
+    this.setState({
+      todos: items,
+      nextToken,
+      state: 'all',
     })
   }
 
@@ -152,6 +207,11 @@ class App extends Component {
     const ListView = ({todos}) => (
       <div>
         <h3>All Todos</h3>
+        <div>
+          <button onClick={() => this.queryAll()}>All</button>
+          <button onClick={() => this.queryCompleted()}>Completed</button>
+          <button onClick={() => this.queryProcessing()}>Processing</button>
+        </div>
         <div>
           {todos.map(todo =>
             <Todo
@@ -167,7 +227,8 @@ class App extends Component {
 
         <ListView todos={this.state.todos}/>
         {
-          this.state.todos.length && this.state.nextToken ? <button onClick={() => this.loadMore()}>Load More</button> : ''
+          this.state.todos.length && this.state.nextToken ?
+            <button onClick={() => this.loadMore()}>Load More</button> : ''
         }
         {
           !this.state.nextToken ? <div>No more data</div> : ''
