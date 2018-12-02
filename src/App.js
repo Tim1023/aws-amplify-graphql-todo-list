@@ -39,6 +39,38 @@ class Todo extends Component {
   }
 }
 
+class SearchBox extends Component{
+  state = {
+    keyword: '',
+  };
+  handleKeywordChange(ev){
+    this.setState({keyword: ev.target.value});
+  }
+  async search(){
+   this.props.search(this.state.keyword)
+  }
+  render() {
+    return (
+      <div>
+        <input
+          name="search"
+          placeholder="Type to search"
+          value={this.state.keyword}
+          onKeyPress={event => {
+            event.key === "Enter" && this.search();
+          }}
+          onChange={(ev) => {
+            this.handleKeywordChange(ev)
+          }}
+        />
+        <button onClick={() => this.search()}>
+          Search
+        </button>
+      </div>
+    )
+  }
+}
+
 class AddTodo extends Component {
   state = {
     title: '',
@@ -82,6 +114,7 @@ class AddTodo extends Component {
     );
   }
 }
+
 
 
 class App extends Component {
@@ -150,11 +183,26 @@ class App extends Component {
         eq: false,
       }
     };
-    const filter = this.state.state === 'completed'
-      ? completedFilter
-      : this.state.state === 'processing'
-        ? processingFilter
-        : '';
+    const searchFilter = {
+      title: {
+        contains: this.state.keyword,
+      }
+    };
+    let filter ='';
+    switch (this.state.state){
+      case 'complete':
+        filter = completedFilter;
+        break;
+      case 'processing':
+        filter = processingFilter;
+        break;
+      case 'search':
+        filter = searchFilter;
+        break;
+      default:
+        break
+    }
+
     const options = {
       nextToken: this.state.nextToken,
     };
@@ -202,12 +250,26 @@ class App extends Component {
       state: 'all',
     })
   }
+  async handleSearch(keyword){
+    const filter = {
+      title: {
+        contains: keyword,
+      }
+    };
+    const {data: {listTodos: {items = [], nextToken = ''}}} = await API.graphql(graphqlOperation(queries.listTodos, {filter}));
+    this.setState({
+      todos: items,
+      nextToken,
+      state: 'search',
+    })
+  }
 
   render() {
     const ListView = ({todos}) => (
       <div>
         <h3>All Todos</h3>
         <div>
+          <SearchBox search={(keyword)=>this.handleSearch(keyword)}/>
           <button onClick={() => this.queryAll()}>All</button>
           <button onClick={() => this.queryCompleted()}>Completed</button>
           <button onClick={() => this.queryProcessing()}>Processing</button>
